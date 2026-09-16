@@ -27,7 +27,12 @@
 namespace QtPropertyEditor
 {
     static MetaTypeRegistration<QtPushButtonActionWrapper> thisInstantiationRegistersQtPushButtonActionWrapperWithQt;
-    
+
+    static bool isEnumValue(const QVariant &value)
+    {
+        return value.isValid() && value.metaType().flags().testFlag(QMetaType::IsEnumeration);
+    }
+
     QList<QByteArray> getPropertyNames(QObject *object)
     {
         QList<QByteArray> propertyNames = getMetaPropertyNames(*object->metaObject());
@@ -566,7 +571,21 @@ namespace QtPropertyEditor
     {
         QVariant value = index.data(Qt::DisplayRole);
         if(value.isValid()) {
-            if(value.typeId() == QVariant::Bool) {
+            // If the value is an enum, create a QComboBox with the enum's keys as items.
+            if(isEnumValue(value)) {
+                const QtAbstractPropertyModel *propertyModel = qobject_cast<const QtAbstractPropertyModel*>(index.model());
+                if(propertyModel) {
+                    const QMetaProperty metaProperty = propertyModel->metaPropertyAtIndex(index);
+                    if(metaProperty.isValid() && metaProperty.isEnumType()) {
+                        const QMetaEnum metaEnum = metaProperty.enumerator();
+                        QComboBox *editor = new QComboBox(parent);
+                        for(int j = 0; j < metaEnum.keyCount(); ++j)
+                            editor->addItem(QString::fromLatin1(metaEnum.key(j)), metaEnum.value(j));
+                        editor->setCurrentIndex(editor->findData(value.toInt()));
+                        return editor;
+                    }
+                } //
+            } else if(value.typeId() == QVariant::Bool) {
                 // We want a check box, but instead of creating an editor widget we'll just directly
                 // draw the check box in paint() and handle mouse clicks in editorEvent().
                 // Here, we'll just return NULL to make sure that no editor is created when this cell is double clicked.
@@ -576,27 +595,6 @@ namespace QtPropertyEditor
                 QLineEdit *editor = new QLineEdit(parent);
                 editor->setText(value.toString());
                 return editor;
-            } else if(value.typeId() == QVariant::Int) {
-                // We don't need to do anything special for an integer, we'll just use the default QSpinBox.
-                // However, we do need to check if it is an enum. If so, we'll use a QComboBox editor.
-                const QtAbstractPropertyModel *propertyModel = qobject_cast<const QtAbstractPropertyModel*>(index.model());
-                if(propertyModel) {
-                    const QMetaProperty metaProperty = propertyModel->metaPropertyAtIndex(index);
-                    if(metaProperty.isValid() && metaProperty.isEnumType()) {
-                        const QMetaEnum metaEnum = metaProperty.enumerator();
-                        int numKeys = metaEnum.keyCount();
-                        if(numKeys > 0) {
-                            QComboBox *editor = new QComboBox(parent);
-                            for(int j = 0; j < numKeys; ++j) {
-                                QByteArray key = QByteArray(metaEnum.key(j));
-                                editor->addItem(QString(key));
-                            }
-                            QByteArray currentKey = QByteArray(metaEnum.valueToKey(value.toInt()));
-                            editor->setCurrentText(QString(currentKey));
-                            return editor;
-                        }
-                    }
-                }
             } else if(value.typeId() == QVariant::Size ||
                        value.typeId() == QVariant::SizeF ||
                       value.typeId() == QVariant::Point ||
@@ -628,7 +626,21 @@ namespace QtPropertyEditor
     {
         QVariant value = index.data(Qt::DisplayRole);
         if(value.isValid()) {
-            if(value.typeId() == QVariant::Double) {
+            // If the value is an enum, set the model's data to the enum value corresponding to the selected key in the QComboBox editor.
+            if(isEnumValue(value)) {
+                QComboBox *comboBoxEditor = qobject_cast<QComboBox*>(editor);
+                const QtAbstractPropertyModel *propertyModel = qobject_cast<const QtAbstractPropertyModel*>(model);
+                if(comboBoxEditor && propertyModel) {
+                    const QMetaProperty metaProperty = propertyModel->metaPropertyAtIndex(index);
+                    if(metaProperty.isValid() && metaProperty.isEnumType()) {
+                        bool ok = false;
+                        const int selectedValue = metaProperty.enumerator().keyToValue(comboBoxEditor->currentText().toLatin1().constData(), &ok);
+                        if(ok)
+                            model->setData(index, QVariant(metaProperty.metaType(), &selectedValue), Qt::EditRole);
+                        return;
+                    }
+                }
+            } else if(value.typeId() == QVariant::Double) {
                 // Set model's double value data to numeric representation in QLineEdit editor.
                 // Conversion from text to number handled by QVariant.
                 QLineEdit *lineEditor = qobject_cast<QLineEdit*>(editor);
@@ -639,26 +651,6 @@ namespace QtPropertyEditor
                     if(ok)
                         model->setData(index, QVariant(dval), Qt::EditRole);
                     return;
-                }
-            } else if(value.typeId() == QVariant::Int) {
-                // We don't need to do anything special for an integer.
-                // However, if it's an enum we'll set the data based on the QComboBox editor.
-                QComboBox *comboBoxEditor = qobject_cast<QComboBox*>(editor);
-                if(comboBoxEditor) {
-                    QString selectedKey = comboBoxEditor->currentText();
-                    const QtAbstractPropertyModel *propertyModel = qobject_cast<const QtAbstractPropertyModel*>(model);
-                    if(propertyModel) {
-                        const QMetaProperty metaProperty = propertyModel->metaPropertyAtIndex(index);
-                        if(metaProperty.isValid() && metaProperty.isEnumType()) {
-                            const QMetaEnum metaEnum = metaProperty.enumerator();
-                            bool ok;
-                            int selectedValue = metaEnum.keyToValue(selectedKey.toLatin1().constData(), &ok);
-                            if(ok)
-                                model->setData(index, QVariant(selectedValue), Qt::EditRole);
-                            return;
-                        }
-                    }
-                    // If we got here, we have a QComboBox editor but the property at index is not an enum.
                 }
             } else if(value.typeId() == QVariant::Size) {
                 QLineEdit *lineEditor = qobject_cast<QLineEdit*>(editor);
@@ -846,7 +838,20 @@ namespace QtPropertyEditor
     {
         QVariant value = index.data(Qt::DisplayRole);
         if(value.isValid()) {
-            if(value.typeId() == QVariant::Bool) {
+            // If the value is an enum, draw the enum's key instead of the numeric value.
+            if(isEnumValue(value)) {
+                const QtAbstractPropertyModel *propertyModel = qobject_cast<const QtAbstractPropertyModel*>(index.model());
+                if(propertyModel) { //
+                    const QMetaProperty metaProperty = propertyModel->metaPropertyAtIndex(index);
+                    if(metaProperty.isValid() && metaProperty.isEnumType()) {
+                        QStyleOptionViewItem itemOption(option);
+                        initStyleOption(&itemOption, index);
+                        itemOption.text = QString::fromLatin1(metaProperty.enumerator().valueToKey(value.toInt()));
+                        QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &itemOption, painter);
+                        return;
+                    }
+                } //
+            } else if(value.typeId() == QVariant::Bool) {
                 bool checked = value.toBool();
                 QStyleOptionButton buttonOption;
                 buttonOption.state |= QStyle::State_Active; // Required!
@@ -856,23 +861,6 @@ namespace QtPropertyEditor
                 buttonOption.rect = QStyle::alignedRect(option.direction, Qt::AlignLeft, checkBoxRect.size(), option.rect); // Our checkbox rect.
                 QApplication::style()->drawControl(QStyle::CE_CheckBox, &buttonOption, painter);
                 return;
-            } else if(value.typeId() == QVariant::Int) {
-                // We don't need to do anything special for an integer.
-                // However, if it's an enum want to render the key name instead of the value.
-                // This cannot be done in displayText() because we need the model index to get the key name.
-                const QtAbstractPropertyModel *propertyModel = qobject_cast<const QtAbstractPropertyModel*>(index.model());
-                if(propertyModel) {
-                    const QMetaProperty metaProperty = propertyModel->metaPropertyAtIndex(index);
-                    if(metaProperty.isValid() && metaProperty.isEnumType()) {
-                        const QMetaEnum metaEnum = metaProperty.enumerator();
-                        QByteArray currentKey = QByteArray(metaEnum.valueToKey(value.toInt()));
-                        QStyleOptionViewItem itemOption(option);
-                        initStyleOption(&itemOption, index);
-                        itemOption.text = QString(currentKey);
-                        QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &itemOption, painter);
-                        return;
-                    }
-                }
             } else if(value.typeId() == QVariant::UserType) {
                 if(value.canConvert<QtPushButtonActionWrapper>()) {
                     QAction *action = value.value<QtPushButtonActionWrapper>().action;
