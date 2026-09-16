@@ -46,9 +46,9 @@ class TestObject : public QObject
     Q_PROPERTY(QRectF myRectF READ myRectF WRITE setMyRectF)
     
 public:
-    // Custom enum will be editable via a QComboBox so long as we tell Qt about it with Q_ENUMS().
-    enum  MyEnum { A, B, C };
-    Q_ENUMS(MyEnum)
+    // Custom enum will be editable via a QComboBox as long as we tell Qt about it with Q_ENUM().
+    enum MyEnum { A, B, C };
+    Q_ENUM(MyEnum)
     
     // Init.
     TestObject(const QString &name = "", QObject *parent = 0, bool hasChild = true) : QObject(parent), _myEnum(B), _myBool(true), _myInt(82), _myFloat(3.14), _myDouble(3.14e-12), _myString("Hi-ya!"), _myDateTime(QDateTime::currentDateTime()), _mySize(2, 4), _mySizeF(3.1, 4.9), _myPoint(0, 1), _myPointF(0.05, 1.03), _myRect(0, 0, 3, 3), _myRectF(0.5, 0.5, 1.3, 3.1)
