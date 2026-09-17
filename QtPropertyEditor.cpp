@@ -383,7 +383,7 @@ namespace QtPropertyEditor
         if(index.column() == 1) {
             QByteArray propertyName = propertyNameAtIndex(index);
             const QMetaProperty metaProperty = metaPropertyAtIndex(index);
-            if(metaProperty.isWritable() || object->dynamicPropertyNames().contains(propertyName) || objectAtIndex(index))
+            if(metaProperty.isWritable() || object->dynamicPropertyNames().contains(propertyName))
                 flags |= Qt::ItemIsEditable;
         }
         return flags;
@@ -895,10 +895,16 @@ namespace QtPropertyEditor
                 bool checked = value.toBool();
                 QVariant newValue(!checked); // Toggle model's bool value.
                 bool success = model->setData(index, newValue, Qt::EditRole);
-                // Update entire table row just in case some other cell also refers to the same bool value.
-                // Otherwise, that other cell will not reflect the current state of the bool set via this cell.
-                if(success)
-                    model->dataChanged(index.sibling(index.row(), 0), index.sibling(index.row(), model->columnCount()));
+                // Refresh all property rows belonging to the same parent object, since a bool property may
+                // be mirrored by another property of the same object (e.g. a read-only property
+                // backed by the same underlying value) that also needs to reflect the new state.
+                if(success) {
+                    QModelIndex parent = index.parent();
+                    int rows = model->rowCount(parent);
+                    int cols = model->columnCount(parent);
+                    if(rows > 0 && cols > 0)
+                        emit model->dataChanged(model->index(0, 0, parent), model->index(rows - 1, cols - 1, parent));
+                }
                 return success;
             } else if(value.canConvert<QtPushButtonActionWrapper>()) {
                 QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);

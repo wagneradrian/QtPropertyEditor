@@ -102,9 +102,9 @@ namespace QtPropertyEditor
         
         // Setters.
         void setObject(QObject *object) { beginResetModel(); _root.setObject(object, _maxTreeDepth, propertyNames); endResetModel(); }
-        void setMaxDepth(int i) { beginResetModel(); _maxTreeDepth = i; reset(); endResetModel(); }
-        void setProperties(const QString &str) { beginResetModel(); QtAbstractPropertyModel::setProperties(str); reset(); endResetModel(); }
-        void addProperty(const QString &str) { beginResetModel(); QtAbstractPropertyModel::addProperty(str); reset(); endResetModel(); }
+        void setMaxDepth(int i) { _maxTreeDepth = i; reset(); }
+        void setProperties(const QString &str) { QtAbstractPropertyModel::setProperties(str); reset(); }
+        void addProperty(const QString &str) { QtAbstractPropertyModel::addProperty(str); reset(); }
         
         // Model interface.
         Node* nodeAtIndex(const QModelIndex &index) const;
@@ -120,7 +120,7 @@ namespace QtPropertyEditor
         QVariant headerData(int section, Qt::Orientation orientation, int role) const;
         
     public slots:
-        void reset() { setObject(object()); }
+        void reset() { beginResetModel(); _root.setObject(object(), _maxTreeDepth, propertyNames); endResetModel(); }
         
     protected:
         Node _root;
