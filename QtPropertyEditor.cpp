@@ -19,10 +19,9 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QScrollBar>
+#include <QSpacerItem>
 #include <QStylePainter>
 #include <QToolButton>
-
-#include <QSpacerItem>
 
 namespace QtPropertyEditor
 {
@@ -97,7 +96,6 @@ namespace QtPropertyEditor
         // str = "name0: header0, name1, name2, name3: header3 ..."
         propertyNames.clear();
         propertyHeaders.clear();
-        // QStringList fields = str.split(",", QString::SkipEmptyParts);
         QStringList fields = str.split(",", Qt::SkipEmptyParts);
         foreach(const QString &field, fields) {
             if(!field.trimmed().isEmpty())
@@ -584,34 +582,32 @@ namespace QtPropertyEditor
                         editor->setCurrentIndex(editor->findData(value.toInt()));
                         return editor;
                     }
-                } //
-            } else if(value.typeId() == QVariant::Bool) {
+                }
+            } else if(value.typeId() == QMetaType::Bool) {
                 // We want a check box, but instead of creating an editor widget we'll just directly
                 // draw the check box in paint() and handle mouse clicks in editorEvent().
                 // Here, we'll just return NULL to make sure that no editor is created when this cell is double clicked.
                 return NULL;
-            } else if(value.typeId() == QVariant::Double) {
+            } else if(value.typeId() == QMetaType::Double) {
                 // Return a QLineEdit to enter double values with arbitrary precision and scientific notation.
                 QLineEdit *editor = new QLineEdit(parent);
                 editor->setText(value.toString());
                 return editor;
-            } else if(value.typeId() == QVariant::Size ||
-                       value.typeId() == QVariant::SizeF ||
-                      value.typeId() == QVariant::Point ||
-                       value.typeId() == QVariant::PointF ||
-                      value.typeId() == QVariant::Rect ||
-                       value.typeId() == QVariant::RectF) {
+            } else if(value.typeId() == QMetaType::QSize ||
+                       value.typeId() == QMetaType::QSizeF ||
+                      value.typeId() == QMetaType::QPoint ||
+                       value.typeId() == QMetaType::QPointF ||
+                      value.typeId() == QMetaType::QRect ||
+                       value.typeId() == QMetaType::QRectF) {
                 // Return a QLineEdit. Parsing will be done in displayText() and setEditorData().
                 QLineEdit *editor = new QLineEdit(parent);
                 editor->setText(displayText(value, QLocale()));
                 return editor;
-            } else if(value.typeId() == QVariant::UserType) {
-                if(value.canConvert<QtPushButtonActionWrapper>()) {
-                    // We want a push button, but instead of creating an editor widget we'll just directly
-                    // draw the button in paint() and handle mouse clicks in editorEvent().
-                    // Here, we'll just return NULL to make sure that no editor is created when this cell is double clicked.
-                    return NULL;
-                }
+            } else if(value.canConvert<QtPushButtonActionWrapper>()) {
+                // We want a push button, but instead of creating an editor widget we'll just directly
+                // draw the button in paint() and handle mouse clicks in editorEvent().
+                // Here, we'll just return NULL to make sure that no editor is created when this cell is double clicked.
+                return NULL;
             }
         }
         return QStyledItemDelegate::createEditor(parent, option, index);
@@ -640,7 +636,7 @@ namespace QtPropertyEditor
                         return;
                     }
                 }
-            } else if(value.typeId() == QVariant::Double) {
+            } else if(value.typeId() == QMetaType::Double) {
                 // Set model's double value data to numeric representation in QLineEdit editor.
                 // Conversion from text to number handled by QVariant.
                 QLineEdit *lineEditor = qobject_cast<QLineEdit*>(editor);
@@ -652,7 +648,7 @@ namespace QtPropertyEditor
                         model->setData(index, QVariant(dval), Qt::EditRole);
                     return;
                 }
-            } else if(value.typeId() == QVariant::Size) {
+            } else if(value.typeId() == QMetaType::QSize) {
                 QLineEdit *lineEditor = qobject_cast<QLineEdit*>(editor);
                 if(lineEditor) {
                     // Parse formats: (w x h) or (w,h) or (w h) <== () are optional
@@ -666,7 +662,7 @@ namespace QtPropertyEditor
                             model->setData(index, QVariant(QSize(w, h)), Qt::EditRole);
                     }
                 }
-            } else if(value.typeId() == QVariant::SizeF) {
+            } else if(value.typeId() == QMetaType::QSizeF) {
                 QLineEdit *lineEditor = qobject_cast<QLineEdit*>(editor);
                 if(lineEditor) {
                     // Parse formats: (w x h) or (w,h) or (w h) <== () are optional
@@ -680,7 +676,7 @@ namespace QtPropertyEditor
                             model->setData(index, QVariant(QSizeF(w, h)), Qt::EditRole);
                     }
                 }
-            } else if(value.typeId() == QVariant::Point) {
+            } else if(value.typeId() == QMetaType::QPoint) {
                 QLineEdit *lineEditor = qobject_cast<QLineEdit*>(editor);
                 if(lineEditor) {
                     // Parse formats: (x,y) or (x y) <== () are optional
@@ -694,7 +690,7 @@ namespace QtPropertyEditor
                             model->setData(index, QVariant(QPoint(x, y)), Qt::EditRole);
                     }
                 }
-            } else if(value.typeId() == QVariant::PointF) {
+            } else if(value.typeId() == QMetaType::QPointF) {
                 QLineEdit *lineEditor = qobject_cast<QLineEdit*>(editor);
                 if(lineEditor) {
                     // Parse formats: (x,y) or (x y) <== () are optional
@@ -708,7 +704,7 @@ namespace QtPropertyEditor
                             model->setData(index, QVariant(QPointF(x, y)), Qt::EditRole);
                     }
                 }
-            } else if(value.typeId() == QVariant::Rect) {
+            } else if(value.typeId() == QMetaType::QRect) {
                 QLineEdit *lineEditor = qobject_cast<QLineEdit*>(editor);
                 if(lineEditor) {
                     // Parse formats: [Point,Size] or [Point Size] <== [] are optional
@@ -730,7 +726,7 @@ namespace QtPropertyEditor
                             model->setData(index, QVariant(QRect(x, y, w, h)), Qt::EditRole);
                     }
                 }
-            } else if(value.typeId() == QVariant::RectF) {
+            } else if(value.typeId() == QMetaType::QRectF) {
                 QLineEdit *lineEditor = qobject_cast<QLineEdit*>(editor);
                 if(lineEditor) {
                     // Parse formats: [Point,Size] or [Point Size] <== [] are optional
@@ -786,27 +782,27 @@ namespace QtPropertyEditor
     QString QtPropertyDelegate::displayText(const QVariant &value, const QLocale &locale) const
     {
         if(value.isValid()) {
-            if(value.typeId() == QVariant::Size) {
+            if(value.typeId() == QMetaType::QSize) {
                 // w x h
                 QSize size = value.toSize();
                 return QString::number(size.width()) + QString(" x ") + QString::number(size.height());
-            } else if(value.typeId() == QVariant::SizeF) {
+            } else if(value.typeId() == QMetaType::QSizeF) {
                 // w x h
                 QSizeF size = value.toSizeF();
                 return QString::number(size.width()) + QString(" x ") + QString::number(size.height());
-            } else if(value.typeId() == QVariant::Point) {
+            } else if(value.typeId() == QMetaType::QPoint) {
                 // (x, y)
                 QPoint point = value.toPoint();
                 return QString("(")
                 + QString::number(point.x()) + QString(", ") + QString::number(point.y())
                 + QString(")");
-            } else if(value.typeId() == QVariant::PointF) {
+            } else if(value.typeId() == QMetaType::QPointF) {
                 // (x, y)
                 QPointF point = value.toPointF();
                 return QString("(")
                 + QString::number(point.x()) + QString(", ") + QString::number(point.y())
                 + QString(")");
-            } else if(value.typeId() == QVariant::Rect) {
+            } else if(value.typeId() == QMetaType::QRect) {
                 // [(x, y), w x h]
                 QRect rect = value.toRect();
                 return QString("[(")
@@ -814,7 +810,7 @@ namespace QtPropertyEditor
                 + QString("), ")
                 + QString::number(rect.width()) + QString(" x ") + QString::number(rect.height())
                 + QString("]");
-            } else if(value.typeId() == QVariant::RectF) {
+            } else if(value.typeId() == QMetaType::QRectF) {
                 // [(x, y), w x h]
                 QRectF rect = value.toRectF();
                 return QString("[(")
@@ -841,7 +837,7 @@ namespace QtPropertyEditor
             // If the value is an enum, draw the enum's key instead of the numeric value.
             if(isEnumValue(value)) {
                 const QtAbstractPropertyModel *propertyModel = qobject_cast<const QtAbstractPropertyModel*>(index.model());
-                if(propertyModel) { //
+                if(propertyModel) {
                     const QMetaProperty metaProperty = propertyModel->metaPropertyAtIndex(index);
                     if(metaProperty.isValid() && metaProperty.isEnumType()) {
                         QStyleOptionViewItem itemOption(option);
@@ -850,8 +846,8 @@ namespace QtPropertyEditor
                         QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &itemOption, painter);
                         return;
                     }
-                } //
-            } else if(value.typeId() == QVariant::Bool) {
+                }
+            } else if(value.typeId() == QMetaType::Bool) {
                 bool checked = value.toBool();
                 QStyleOptionButton buttonOption;
                 buttonOption.state |= QStyle::State_Active; // Required!
@@ -861,18 +857,16 @@ namespace QtPropertyEditor
                 buttonOption.rect = QStyle::alignedRect(option.direction, Qt::AlignLeft, checkBoxRect.size(), option.rect); // Our checkbox rect.
                 QApplication::style()->drawControl(QStyle::CE_CheckBox, &buttonOption, painter);
                 return;
-            } else if(value.typeId() == QVariant::UserType) {
-                if(value.canConvert<QtPushButtonActionWrapper>()) {
-                    QAction *action = value.value<QtPushButtonActionWrapper>().action;
-                    QStyleOptionButton buttonOption;
-                    buttonOption.state = QStyle::State_Active | QStyle::State_Raised;
-                    //buttonOption.features = QStyleOptionButton::DefaultButton;
-                    if(action) buttonOption.text = action->text();
-                    buttonOption.rect = option.rect;
-                    //buttonOption.rect = QRect(option.rect.x() + 5, option.rect.y() + 5, option.rect.width() - 10, option.rect.height() - 10);
-                    QApplication::style()->drawControl(QStyle::CE_PushButton, &buttonOption, painter);
-                    return;
-                }
+            } else if(value.canConvert<QtPushButtonActionWrapper>()) {
+                QAction *action = value.value<QtPushButtonActionWrapper>().action;
+                QStyleOptionButton buttonOption;
+                buttonOption.state = QStyle::State_Active | QStyle::State_Raised;
+                //buttonOption.features = QStyleOptionButton::DefaultButton;
+                if(action) buttonOption.text = action->text();
+                buttonOption.rect = option.rect;
+                //buttonOption.rect = QRect(option.rect.x() + 5, option.rect.y() + 5, option.rect.width() - 10, option.rect.height() - 10);
+                QApplication::style()->drawControl(QStyle::CE_PushButton, &buttonOption, painter);
+                return;
             }
         }
         QStyledItemDelegate::paint(painter, option, index);
@@ -882,7 +876,7 @@ namespace QtPropertyEditor
     {
         QVariant value = index.data(Qt::DisplayRole);
         if(value.isValid()) {
-            if(value.typeId() == QVariant::Bool) {
+            if(value.typeId() == QMetaType::Bool) {
                 if(event->type() == QEvent::MouseButtonDblClick)
                     return false;
                 if(event->type() != QEvent::MouseButtonRelease)
@@ -906,17 +900,15 @@ namespace QtPropertyEditor
                 if(success)
                     model->dataChanged(index.sibling(index.row(), 0), index.sibling(index.row(), model->columnCount()));
                 return success;
-            } else if(value.typeId() == QVariant::UserType) {
-                if(value.canConvert<QtPushButtonActionWrapper>()) {
-                    QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
-                    if(mouseEvent->button() != Qt::LeftButton)
-                        return false;
-                    if(!option.rect.contains(mouseEvent->pos()))
-                        return false;
-                    QAction *action = value.value<QtPushButtonActionWrapper>().action;
-                    if(action) action->trigger();
-                    return true;
-                }
+            } else if(value.canConvert<QtPushButtonActionWrapper>()) {
+                QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+                if(mouseEvent->button() != Qt::LeftButton)
+                    return false;
+                if(!option.rect.contains(mouseEvent->pos()))
+                    return false;
+                QAction *action = value.value<QtPushButtonActionWrapper>().action;
+                if(action) action->trigger();
+                return true;
             }
         }
         return QStyledItemDelegate::editorEvent(event, model, option, index);
@@ -985,20 +977,7 @@ namespace QtPropertyEditor
             opt.text = cornerButton->text();
             //opt.icon = cornerButton->icon();
 
-            /*
-            QSize s = ( cornerButton->style()->sizeFromContents(
-                                                    QStyle::CT_HeaderSection,
-                                                    &opt,
-                                                    QSize(),
-                                                    cornerButton
-                                                ).expandedTo( QApplication::globalStrut() )
-                       );
-            */
-
-            // Qt6
-            // {{
-            QSize s = cornerButton->style()->sizeFromContents(QStyle::CT_HeaderSection, &opt, QSize(), cornerButton).expandedTo(QSize(10, 10));  // QSize(10, 10)로 globalStrut 대체
-            // }}
+            QSize s = cornerButton->style()->sizeFromContents(QStyle::CT_HeaderSection, &opt, QSize(), cornerButton).expandedTo(QSize(10, 10));
 
             if(s.isValid()) {
                 verticalHeader()->setMinimumWidth(s.width());
@@ -1060,10 +1039,6 @@ namespace QtPropertyEditor
             rows.append(index.row());
         }
 
-        // Qt5
-        // qSort(rows);
-
-        // Qt6
         QVector<int> vec = rows.toVector();
         std::sort(vec.begin(), vec.end());
         rows = QList<int>::fromVector(vec);
@@ -1083,10 +1058,6 @@ namespace QtPropertyEditor
             rows.append(index.row());
         }
 
-        // Qt5
-        // qSort(rows);
-
-        // Qt6
         QVector<int> vec = rows.toVector();
         std::sort(vec.begin(), vec.end());
         rows = QList<int>::fromVector(vec);
@@ -1137,8 +1108,7 @@ namespace QtPropertyEditor
                 // paint by hand (borrowed from QTableCornerButton)
                 QStyleOptionHeader opt;
 
-                // opt.init(btn);
-                opt.initFrom(btn); // Qt6
+                opt.initFrom(btn);
 
                 QStyle::State styleState = QStyle::State_None;
                 if (btn->isEnabled())
